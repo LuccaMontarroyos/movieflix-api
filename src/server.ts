@@ -1,7 +1,6 @@
 import express from "express";
 const app = express();
 import { PrismaClient } from "@prisma/client";
-import { equal } from "assert";
 const port = 3000;
 const prisma = new PrismaClient();
 
@@ -27,10 +26,6 @@ app.post('/movies', async (req, res) => {
     const { title, genres_id, languages_id, release_date } = req.body;
 
     try {
-        /*está sendo passado o título da requisição feita e através do método pego da tabela 'movie'
-        .findFirst, que lá ele tentará encontrar um movie onde o nome é igual ao titulo passado na requisição,
-        e usando o modo sensitive, que será armazenado na variável movieWithTheSameTitle, e assim fazemos a 
-        verificação*/
         const movieWithTheSameTitle = await prisma.movie.findFirst({
             where: {
                 title: {
@@ -112,6 +107,30 @@ app.delete('/movies/:id', async (req, res) => {
     } catch (error) {
         res.status(500).send({ message: "Falha ao remover o filme" })
     }
+})
+
+app.get('/movies/:genreName', async (req, res) => {
+
+    try {
+        const filteredGenreNames = await prisma.movie.findMany({
+            where: {
+                genres: {
+                    genre_name: {
+                        mode: 'insensitive',
+                        equals: req.params.genreName,
+                    }
+                }
+            },
+            include: {
+                languages: true,
+                genres: true,
+            }
+        })
+        
+        res.status(200).send(filteredGenreNames)
+    } catch (error) {
+        res.status(500).send({ message: "Falha ao filtrar filmes pelo gênero"})
+    }   
 })
 
 app.listen(port, () => {
