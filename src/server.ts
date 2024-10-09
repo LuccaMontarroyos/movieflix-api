@@ -21,7 +21,7 @@ app.get('/movies', async (req, res) => {
             languages: true
         }
     });
-    res.json(movies);
+    res.status(200).json(movies);
 })
 
 app.post('/movies', async (req, res) => {
