@@ -97,7 +97,7 @@ app.delete('/movies/:id', async (req, res) => {
     })
 
     if (!movie) {
-        res.status(404).send({ message: "Filme não encontrado"})
+        res.status(404).send({ message: "Filme não encontrado" })
     }
 
     try {
@@ -132,8 +132,53 @@ app.get('/movies/:genreName', async (req, res) => {
 
         res.status(200).send(filteredGenreNames)
     } catch (error) {
-        res.status(500).send({ message: "Falha ao filtrar filmes pelo gênero"})
-    }   
+        res.status(500).send({ message: "Falha ao filtrar filmes pelo gênero" })
+    }
+})
+
+app.put('/genres/:id', async (req, res) => {
+    const id = Number(req.params.id);
+    const { genre_name } = req.body;
+
+    if (!genre_name) {
+        res.status(400).send({ message: "O nome do gênero é obrigatório"})
+    }
+
+    
+
+    try {
+        const genre = await prisma.genre.findUnique({
+            where: { id }
+        })
+    
+        if (!genre) {
+            return res.status(404).send({ message: "ID não encontrado ou inválido" })
+        }
+
+        const existingGenre = await prisma.genre.findFirst({
+            where: {
+                genre_name: {
+                    equals: genre_name,
+                    mode: "insensitive"
+                }
+            }
+        })
+
+        if (existingGenre) {
+            return res.status(409).send({message: "Gênero já existente"})
+        }
+
+        await prisma.genre.update({
+            where: {
+                id
+            },
+            data: genre_name
+        })
+        res.status(200).send();
+    } catch (error) {
+        res.status(500).send({ message: "Não foi possível atualizar o gênero" })
+    }
+
 })
 
 app.listen(port, () => {
