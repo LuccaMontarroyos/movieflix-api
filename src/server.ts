@@ -2,6 +2,7 @@ import express from "express";
 import { PrismaClient } from "@prisma/client";
 import swaggerUi from "swagger-ui-express";
 import swaggerDocument from "../swagger.json";
+import { title } from "process";
 
 const app = express();
 const port = 3000;
@@ -13,10 +14,15 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/movies', async (req, res) => {
 
+    const { sort , order } = req.query;
+
+    const sortField = sort?.toString() || 'title';
+    const orderField = order?.toString() === 'desc' ? 'desc' : 'asc';
+
     try {
         const movies = await prisma.movie.findMany({
             orderBy: {
-                title: 'asc'
+                [sortField]: orderField
             },
             include: {
                 genres: true,
@@ -46,7 +52,7 @@ app.get('/movies', async (req, res) => {
             movies
         });
     } catch (error) {
-        res.status(500).send({ message: "Falha ao listar filmes" })
+        res.status(500).send({ message: `Falha ao listar filmes, erro: ${error}` })
     }
 })
 
