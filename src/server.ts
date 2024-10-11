@@ -12,16 +12,21 @@ app.use(express.json());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/movies', async (req, res) => {
-    const movies = await prisma.movie.findMany({
-        orderBy: {
-            title: 'asc'
-        },
-        include: {
-            genres: true,
-            languages: true
-        }
-    });
-    res.status(200).json(movies);
+    try {
+
+        const movies = await prisma.movie.findMany({
+            orderBy: {
+                title: 'asc'
+            },
+            include: {
+                genres: true,
+                languages: true
+            }
+        });
+        res.status(200).json(movies);
+    } catch (error) {
+        res.status(500).send({ message: "Falha ao listar filmes"})
+    }
 })
 
 app.post('/movies', async (req, res) => {
@@ -42,7 +47,7 @@ app.post('/movies', async (req, res) => {
             return res.status(409).send({ message: 'Já existe um filme cadastrado com esse título' });
         }
 
-        await prisma.movie.create({
+        const createdMovie = await prisma.movie.create({
             data: {
                 title,
                 languages_id,
@@ -50,11 +55,12 @@ app.post('/movies', async (req, res) => {
                 release_date: new Date(release_date)
             }
         })
+        res.status(201).json(createdMovie);
     } catch (error) {
         return res.status(500).send({ message: 'Falha ao cadastrar um filme' })
     }
 
-    res.status(201).send();
+
 })
 
 
@@ -75,13 +81,13 @@ app.put('/movies/:id', async (req, res) => {
     }
 
     try {
-        await prisma.movie.update({
+        const updatedMovie = await prisma.movie.update({
             where: {
                 id
             },
             data: data
         })
-        res.status(200).send();
+        res.status(200).json(updatedMovie);
     } catch (error) {
         res.status(500).send({ message: "Falha ao atualizar registro do filme" })
     }
@@ -130,7 +136,7 @@ app.get('/movies/:genreName', async (req, res) => {
             }
         })
 
-        res.status(200).send(filteredGenreNames)
+        res.status(200).json(filteredGenreNames)
     } catch (error) {
         res.status(500).send({ message: "Falha ao filtrar filmes pelo gênero" })
     }
@@ -141,16 +147,16 @@ app.put('/genres/:id', async (req, res) => {
     const { genre_name } = req.body;
 
     if (!genre_name) {
-        res.status(400).send({ message: "O nome do gênero é obrigatório"})
+        res.status(400).send({ message: "O nome do gênero é obrigatório" })
     }
 
-    
+
 
     try {
         const genre = await prisma.genre.findUnique({
             where: { id }
         })
-    
+
         if (!genre) {
             return res.status(404).send({ message: "ID não encontrado ou inválido" })
         }
@@ -165,20 +171,63 @@ app.put('/genres/:id', async (req, res) => {
         })
 
         if (existingGenre) {
-            return res.status(409).send({message: "Gênero já existente"})
+            return res.status(409).send({ message: "Gênero já existente" })
         }
 
-        await prisma.genre.update({
+        const updatedGenre = await prisma.genre.update({
             where: {
                 id
             },
             data: genre_name
         })
-        res.status(200).send();
+        res.status(200).json(updatedGenre);
     } catch (error) {
         res.status(500).send({ message: "Não foi possível atualizar o gênero" })
     }
 
+})
+
+app.post('/genres', async (req, res) => {
+    const { genre_name } = req.body;
+
+    try {
+
+        const existingGenre = await prisma.genre.findFirst({
+            where: {
+                genre_name: {
+                    equals: genre_name,
+                    mode: "insensitive"
+                }
+            }
+        })
+
+        if (existingGenre) {
+            return res.status(409).send({ message: "Gênero já existente" });
+        }
+
+        const createdGenre = await prisma.genre.create({
+            data: {
+                genre_name
+            }
+        })
+        res.status(201).json(createdGenre);
+    } catch (error) {
+        res.status(500).send({ message: "Falha ao adicionar novo gênero" });
+    }
+})
+
+app.get('/genres', async (req, res) => {
+
+    try {
+        const genres = await prisma.genre.findMany({
+            orderBy: {
+                genre_name: "asc"
+            }
+        })
+        res.status(200).json(genres);
+    } catch (error) {
+        res.status(500).send({ message: "Falha ao listar gêneros" })
+    }
 })
 
 app.listen(port, () => {
