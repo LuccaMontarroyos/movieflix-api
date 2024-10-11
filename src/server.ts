@@ -12,8 +12,8 @@ app.use(express.json());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/movies', async (req, res) => {
-    try {
 
+    try {
         const movies = await prisma.movie.findMany({
             orderBy: {
                 title: 'asc'
@@ -23,7 +23,28 @@ app.get('/movies', async (req, res) => {
                 languages: true
             }
         });
-        res.status(200).json(movies);
+        
+        const totalMovies = movies.length;
+        
+        const totalDuration = await prisma.movie.aggregate({
+            _sum: {
+                duration: true
+            }
+        })
+
+        const countDuration = totalDuration._sum.duration;
+
+        let averageDuration = 0;
+        
+        if (countDuration) {
+            averageDuration = Number((countDuration/totalMovies).toFixed(2));
+        }
+
+        res.status(201).json({
+            totalMovies,
+            averageDuration,
+            movies
+        });
     } catch (error) {
         res.status(500).send({ message: "Falha ao listar filmes" })
     }
@@ -31,7 +52,7 @@ app.get('/movies', async (req, res) => {
 
 app.post('/movies', async (req, res) => {
 
-    const { title, genres_id, languages_id, release_date } = req.body;
+    const { title, genres_id, languages_id, release_date, director, duration } = req.body;
 
     try {
         const movieWithTheSameTitle = await prisma.movie.findFirst({
@@ -52,12 +73,16 @@ app.post('/movies', async (req, res) => {
                 title,
                 languages_id,
                 genres_id,
-                release_date: new Date(release_date)
+                release_date: new Date(release_date),
+                director,
+                duration
             }
         })
+        console.log(createdMovie);
+        
         res.status(201).json(createdMovie);
     } catch (error) {
-        return res.status(500).send({ message: 'Falha ao cadastrar um filme' })
+        return res.status(500).send({ message: `Falha ao cadastrar um filme, erro: ${error}` })
     }
 
 

@@ -23,14 +23,16 @@ model Language {
   @@map("languages")
 }
 
-model Movie {
-  id           Int        @id @default(autoincrement())
-  title        String?    @db.VarChar(50)
-  genres_id    Int?
-  languages_id Int?
-  release_date DateTime?  @db.Date
-  genres       Genre?    @relation(fields: [genres_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_genre")
-  languages    Language? @relation(fields: [languages_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_language")
+  model Movie {
+    id           Int        @id @default(autoincrement())
+    title        String?    @db.VarChar(50)
+    genres_id    Int?
+    languages_id Int?
+    release_date DateTime?  @db.Date
+    director     String?    @db.VarChar(50)
+    duration     Int?
+    genres       Genre?    @relation(fields: [genres_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_genre")
+    languages    Language? @relation(fields: [languages_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_language")
 
-  @@map("movies")
-}
+    @@map("movies")
+  }
