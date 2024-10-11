@@ -25,7 +25,7 @@ app.get('/movies', async (req, res) => {
         });
         res.status(200).json(movies);
     } catch (error) {
-        res.status(500).send({ message: "Falha ao listar filmes"})
+        res.status(500).send({ message: "Falha ao listar filmes" })
     }
 })
 
@@ -112,7 +112,7 @@ app.delete('/movies/:id', async (req, res) => {
                 id
             }
         })
-        res.status(200).send();
+        res.status(200).send({ message: "Filme removido com sucesso"});
     } catch (error) {
         res.status(500).send({ message: "Falha ao remover o filme" })
     }
@@ -227,6 +227,31 @@ app.get('/genres', async (req, res) => {
         res.status(200).json(genres);
     } catch (error) {
         res.status(500).send({ message: "Falha ao listar gêneros" })
+    }
+})
+
+app.delete('/genres/:id', async (req, res) => {
+    const id = Number(req.params.id);
+
+    try {
+        const genre = await prisma.genre.findFirst({
+            where: {
+                id
+            }
+        })
+
+        if (!genre) {
+            return res.status(404).send({ message:"ID incorreto"})
+        }
+
+        await prisma.genre.delete({
+            where: {
+                id
+            }
+        })
+        res.status(200).send({ message: "Gênero removido com sucesso"});
+    } catch (error) {
+        res.status(500).send({ message: "Não foi possível deletar o gênero"})
     }
 })
 
