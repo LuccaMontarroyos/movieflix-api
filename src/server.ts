@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import swaggerUi from "swagger-ui-express";
 import swaggerDocument from "../swagger.json";
 import { title } from "process";
+import { stringify } from "querystring";
 
 const app = express();
 const port = 3000;
@@ -12,15 +13,32 @@ app.use(express.json());
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-app.get('/movies', async (req, res) => {
+app.get('/movies/', async (req, res) => {
 
-    const { sort , order } = req.query;
+    const { sort, order, language } = req.query;
+
+    const languageName = language?.toString();
 
     const sortField = sort?.toString() || 'title';
     const orderField = order?.toString() === 'desc' ? 'desc' : 'asc';
 
+    let where = {}
+
+    if (languageName) {
+        where = {
+            languages: {
+                language_name: {
+                    equals: languageName,
+                    mode: 'insensitive'
+                }
+            }
+        }
+    }
+     
+
     try {
         const movies = await prisma.movie.findMany({
+            where,
             orderBy: {
                 [sortField]: orderField
             },
@@ -29,9 +47,9 @@ app.get('/movies', async (req, res) => {
                 languages: true
             }
         });
-        
+
         const totalMovies = movies.length;
-        
+
         const totalDuration = await prisma.movie.aggregate({
             _sum: {
                 duration: true
@@ -41,9 +59,9 @@ app.get('/movies', async (req, res) => {
         const countDuration = totalDuration._sum.duration;
 
         let averageDuration = 0;
-        
+
         if (countDuration) {
-            averageDuration = Number((countDuration/totalMovies).toFixed(2));
+            averageDuration = Number((countDuration / totalMovies).toFixed(2));
         }
 
         res.status(201).json({
@@ -52,7 +70,7 @@ app.get('/movies', async (req, res) => {
             movies
         });
     } catch (error) {
-        res.status(500).send({ message: `Falha ao listar filmes, erro: ${error}` })
+        res.status(500).send({ message: `Falha ao listar filmes` })
     }
 })
 
@@ -85,10 +103,10 @@ app.post('/movies', async (req, res) => {
             }
         })
         console.log(createdMovie);
-        
+
         res.status(201).json(createdMovie);
     } catch (error) {
-        return res.status(500).send({ message: `Falha ao cadastrar um filme, erro: ${error}` })
+        return res.status(500).send({ message: `Falha ao cadastrar um filme` })
     }
 
 
@@ -143,7 +161,7 @@ app.delete('/movies/:id', async (req, res) => {
                 id
             }
         })
-        res.status(200).send({ message: "Filme removido com sucesso"});
+        res.status(200).send({ message: "Filme removido com sucesso" });
     } catch (error) {
         res.status(500).send({ message: "Falha ao remover o filme" })
     }
@@ -167,7 +185,7 @@ app.get('/movies/:genreName', async (req, res) => {
             }
         })
 
-        res.status(200).json(filteredGenreNames)
+        res.status(201).json(filteredGenreNames)
     } catch (error) {
         res.status(500).send({ message: "Falha ao filtrar filmes pelo gênero" })
     }
@@ -272,7 +290,7 @@ app.delete('/genres/:id', async (req, res) => {
         })
 
         if (!genre) {
-            return res.status(404).send({ message:"ID incorreto"})
+            return res.status(404).send({ message: "ID incorreto" })
         }
 
         await prisma.genre.delete({
@@ -280,9 +298,9 @@ app.delete('/genres/:id', async (req, res) => {
                 id
             }
         })
-        res.status(200).send({ message: "Gênero removido com sucesso"});
+        res.status(200).send({ message: "Gênero removido com sucesso" });
     } catch (error) {
-        res.status(500).send({ message: "Não foi possível deletar o gênero"})
+        res.status(500).send({ message: "Não foi possível deletar o gênero" })
     }
 })
 
